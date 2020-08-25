@@ -1,0 +1,184 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: java-spring-mongodb-kafka-template
+  annotations:
+    openshift.io/display-name: Java Spring MongoDB Kafka Template
+    description: Start building your next Java Spring application on OpenShift.
+    tags: java,ibm
+    iconClass: icon-java
+    openshift.io/long-description: The example application at https://github.com/gargpriyank/java-spring-mongodb-kafka-example
+      creates a microservice component to connect to IBM Databases for MongoDB and IBM Event Stream (Kafka).
+    openshift.io/provider-display-name: IBM
+    openshift.io/documentation-url: https://github.com/gargpriyank/java-spring-mongodb-kafka-example/blob/master/README.md
+    openshift.io/support-url: https://www.ibm.com/cloud/support
+message: A Java application is being deployed. To view your deployment navigate to your project.
+labels:
+  template: java-spring-mongodb-kafka-template
+  app: java-spring-mongodb-kafka-template
+objects:
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: "${NAME}"
+      annotations:
+        description: Exposes and load balances the application pods
+    spec:
+      ports:
+        - name: web
+          port: 8080
+          targetPort: 8080
+      selector:
+        name: "${NAME}"
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: "${NAME}"
+    spec:
+      to:
+        kind: Service
+        name: "${NAME}"
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: "${NAME}"
+      annotations:
+        description: Keeps track of changes in the application image
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata:
+      name: "${NAME}"
+      annotations:
+        description: Defines how to build the application
+        template.alpha.openshift.io/wait-for-ready: 'true'
+  spec:
+    source:
+      type: Git
+      git:
+        uri: "${GITHUB_REPO}"
+        ref: "${BRANCH}"
+    strategy:
+      type: Source
+      dockerStrategy:
+        dockerfilePath: Dockerfile
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "${NAME}:latest"
+    triggers:
+      - type: ImageChange
+      - type: ConfigChange
+      - kind: DeploymentConfig
+        apiVersion: v1
+        metadata:
+          name: "${NAME}"
+          annotations:
+            description: Defines how to deploy the application server
+            template.alpha.openshift.io/wait-for-ready: 'true'
+        spec:
+          strategy:
+            type: Rolling
+          triggers:
+            - type: ImageChange
+              imageChangeParams:
+                automatic: true
+                containerNames:
+                  - "${NAME}"
+                from:
+                  kind: ImageStreamTag
+                  name: "${NAME}:latest"
+            - type: ConfigChange
+          replicas: "${REPLICAS}"
+          selector:
+            name: "${NAME}"
+          template:
+            metadata:
+              name: "${NAME}"
+              labels:
+                name: "${NAME}"
+            spec:
+              containers:
+                - name: "${NAME}"
+                  image: "${NAME}"
+                  ports:
+                    - containerPort: 8080
+                  readinessProbe:
+                    timeoutSeconds: 3
+                    initialDelaySeconds: 3
+                    httpGet:
+                      path: "/"
+                      port: 8080
+                  livenessProbe:
+                    timeoutSeconds: 3
+                    initialDelaySeconds: 30
+                    httpGet:
+                      path: "/"
+                      port: 8080
+                  resources:
+                    limits:
+                      memory: "${MEMORY_LIMIT}"
+                  env:
+                    - name: JVM_OPTS
+                        value: "-Djavax.net.ssl.trustStore=/etc/keystore/cert/{{jks}} -Djavax.net.ssl.trustStorePassword={{jks_pass}}"
+                    - name: DB_URL
+                      valueFrom:
+                        secretKeyRef:
+                          name: db-secret
+                          key: db-url
+                    - name: DB_USERNAME
+                      valueFrom:
+                        secretKeyRef:
+                          name: db-secret
+                          key: db-username
+                    - name: DB_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: db-secret
+                          key: db-password
+                    - name: KEYSTORE_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: keystore-cred-secret
+                          key: keystore-password
+                    - name: KEYSTORE_ALIAS
+                      valueFrom:
+                        secretKeyRef:
+                          name: keystore-cred-secret
+                          key: keystore-alias
+                    - name: KEYSTORE_FULL_PATH
+                      valueFrom:
+                        secretKeyRef:
+                          name: keystore-cred-secret
+                          key: keystore-fullpath
+parameters:
+  - name: NAME
+    displayName: Name
+    description: The name for application and associated objects. Lowercase letters,
+      numbers, and '-' only.
+    required: true
+    value: java-spring-mongodb-kafka-template
+    from: "[a-z0-9-]{40}"
+  - name: GITHUB_REPO
+    displayName: GitHub Repository
+    description: Source code for OpenShift to build and deploy. Using the default value
+      will deploy out of the box. To make changes, fork the template repository and
+      paste that here instead.
+    required: true
+    value: https://github.com/gargpriyank/java-spring-mongodb-kafka-example.git
+  - name: BRANCH
+    displayName: Branch Name
+    description: GitHub repo branch name, default is 'master'
+    required: true
+    value: master
+  - name: MEMORY_LIMIT
+    displayName: Memory Limit
+    description: Maximum amount of memory the container can use. Using the default value
+      should work out of the box. You can modify this if you want to limit or extend
+      the memory further.
+    required: true
+    value: 512Mi
+  - name: REPLICAS
+    displayName: REPLICAS
+    description: Number of active application pods.
+    required: true
+    value: 2
