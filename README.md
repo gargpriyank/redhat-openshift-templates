@@ -1,1 +1,1 @@
-# This repository is created to cover some examples related to Red Hat OpenShift.
+# This repository covers some examples of Red Hat OpenShift Templates.
