@@ -8,7 +8,7 @@ metadata:
     tags: java,ibm
     iconClass: icon-java
     openshift.io/long-description: The example application at https://github.com/gargpriyank/java-spring-mongodb-kafka-example
-      creates a microservice component to connect to IBM Databases for MongoDB and IBM Event Stream (Kafka).
+      creates a microservice component and connects to IBM Databases for MongoDB and IBM Event Stream (Kafka).
     openshift.io/provider-display-name: IBM
     openshift.io/documentation-url: https://github.com/gargpriyank/java-spring-mongodb-kafka-example/blob/master/README.md
     openshift.io/support-url: https://www.ibm.com/cloud/support
@@ -120,21 +120,16 @@ objects:
                   env:
                     - name: JVM_OPTS
                         value: "-Djavax.net.ssl.trustStore=/etc/keystore/cert/{{jks}} -Djavax.net.ssl.trustStorePassword={{jks_pass}}"
-                    - name: DB_URL
+                    - name: MONGO_DB_URL
                       valueFrom:
                         secretKeyRef:
-                          name: db-secret
-                          key: db-url
-                    - name: DB_USERNAME
+                          name: mongo-db-secret
+                          key: mongo-db-url
+                    - name: MONGO_DB_NAME
                       valueFrom:
                         secretKeyRef:
-                          name: db-secret
-                          key: db-username
-                    - name: DB_PASSWORD
-                      valueFrom:
-                        secretKeyRef:
-                          name: db-secret
-                          key: db-password
+                          name: mongo-db-secret
+                          key: mongo-db-name
                     - name: KEYSTORE_PASSWORD
                       valueFrom:
                         secretKeyRef:
@@ -150,6 +145,14 @@ objects:
                         secretKeyRef:
                           name: keystore-cred-secret
                           key: keystore-fullpath
+                  volumeMounts:
+                    - name: keystore
+                      mountPath: /etc/keystore/cert/
+                      readOnly: true
+            volumes:
+              - name: keystore
+                secret:
+                  secretName: keystore-cert-secret
 parameters:
   - name: NAME
     displayName: Name
