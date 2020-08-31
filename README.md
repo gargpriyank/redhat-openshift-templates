@@ -6,7 +6,7 @@
         - [Deploy](#deploy)
         - [Test](#test)
 
-## How to use templates
+## How to use the templates
 
 The sample Red Hat OpenShift templates are available in templates folder in the form of `.yaml` files. Each `.yaml` constitutes Service, Route, ImageStream, BuildConfig, DeploymentConfig, etc. objects to deploy the application provided as Github URL.
 
