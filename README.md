@@ -4,6 +4,7 @@
     - [java-spring-mongodb-kafka-template](#java-spring-mongodb-kafka-template)
         - [Prerequisites](#prerequisites)
         - [Deploy](#deploy)
+        - [Test](#test)
 
 ## How to use templates
 
@@ -46,3 +47,16 @@ oc create secret generic java-spring-mongodb-kafka-secret --from-literal=jvm-sec
 ```bash
 oc process -f templates/java-spring-mongodb-kafka-template.yaml | oc apply -f -
 ```
+
+#### Test
+
+The application saves and retrieves employee data and can be accessed through the endpoint `<OpenShift Generated Route URL>/employee`.
+1. Send a POST request with following JSON to save employee data. The POST request sends the data to Kafka topic. Kafka consumer listens to the message and save it into MongoDB.
+```bash
+{
+	"name": "..",
+	"address": "...",
+	"deptName": "..."
+}
+```
+2. Send a GET request to retrieve all the employees.
