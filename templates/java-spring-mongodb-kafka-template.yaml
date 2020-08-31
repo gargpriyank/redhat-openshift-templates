@@ -1,7 +1,7 @@
 kind: Template
 apiVersion: v1
 metadata:
-  name: java-spring-mongodb-kafka-template
+  name: java-spring-mongodb-kafka
   annotations:
     openshift.io/display-name: Java Spring MongoDB Kafka Template
     description: Start building your next Java Spring application on OpenShift.
@@ -14,8 +14,8 @@ metadata:
     openshift.io/support-url: https://www.ibm.com/cloud/support
 message: A Java application is being deployed. To view your deployment navigate to your project.
 labels:
-  template: java-spring-mongodb-kafka-template
-  app: java-spring-mongodb-kafka-template
+  template: java-spring-mongodb-kafka
+  app: java-spring-mongodb-kafka
 objects:
   - kind: Service
     apiVersion: v1
@@ -51,115 +51,113 @@ objects:
       annotations:
         description: Defines how to build the application
         template.alpha.openshift.io/wait-for-ready: 'true'
-  spec:
-    source:
-      type: Git
-      git:
-        uri: "${GITHUB_REPO}"
-        ref: "${BRANCH}"
-    strategy:
-      type: Source
-      dockerStrategy:
-        dockerfilePath: Dockerfile
-    output:
-      to:
-        kind: ImageStreamTag
-        name: "${NAME}:latest"
-    triggers:
-      - type: ImageChange
-      - type: ConfigChange
-      - kind: DeploymentConfig
-        apiVersion: v1
+    spec:
+      source:
+        type: Git
+        git:
+          uri: "${GITHUB_REPO}"
+          ref: "${BRANCH}"
+      strategy:
+        type: Source
+        dockerStrategy:
+          dockerfilePath: Dockerfile
+      output:
+        to:
+          kind: ImageStreamTag
+          name: "${NAME}:latest"
+      triggers:
+        - type: ImageChange
+        - type: ConfigChange
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: "${NAME}"
+      annotations:
+        description: Defines how to deploy the application server
+        template.alpha.openshift.io/wait-for-ready: 'true'
+    spec:
+      strategy:
+        type: Rolling
+      triggers:
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - "${NAME}"
+            from:
+              kind: ImageStreamTag
+              name: "${NAME}:latest"
+        - type: ConfigChange
+      replicas: "${{REPLICAS}}"
+      selector:
+        name: "${NAME}"
+      template:
         metadata:
           name: "${NAME}"
-          annotations:
-            description: Defines how to deploy the application server
-            template.alpha.openshift.io/wait-for-ready: 'true'
-        spec:
-          strategy:
-            type: Rolling
-          triggers:
-            - type: ImageChange
-              imageChangeParams:
-                automatic: true
-                containerNames:
-                  - "${NAME}"
-                from:
-                  kind: ImageStreamTag
-                  name: "${NAME}:latest"
-            - type: ConfigChange
-          replicas: "${REPLICAS}"
-          selector:
+          labels:
             name: "${NAME}"
-          template:
-            metadata:
-              name: "${NAME}"
-              labels:
-                name: "${NAME}"
-            spec:
-              containers:
-                - name: "${NAME}"
-                  image: "${NAME}"
-                  ports:
-                    - containerPort: 8080
-                  readinessProbe:
-                    timeoutSeconds: 3
-                    initialDelaySeconds: 3
-                    httpGet:
-                      path: "/"
-                      port: 8080
-                  livenessProbe:
-                    timeoutSeconds: 3
-                    initialDelaySeconds: 30
-                    httpGet:
-                      path: "/"
-                      port: 8080
-                  resources:
-                    limits:
-                      memory: "${MEMORY_LIMIT}"
-                  env:
-                    - name: JVM_OPTS
-                        value: "-Djavax.net.ssl.trustStore=/etc/keystore/cert/{{jks}} -Djavax.net.ssl.trustStorePassword={{jks_pass}}"
-                    - name: MONGO_DB_URL
-                      valueFrom:
-                        secretKeyRef:
-                          name: mongo-db-secret
-                          key: mongo-db-url
-                    - name: MONGO_DB_NAME
-                      valueFrom:
-                        secretKeyRef:
-                          name: mongo-db-secret
-                          key: mongo-db-name
-                    - name: KEYSTORE_PASSWORD
-                      valueFrom:
-                        secretKeyRef:
-                          name: keystore-cred-secret
-                          key: keystore-password
-                    - name: KEYSTORE_ALIAS
-                      valueFrom:
-                        secretKeyRef:
-                          name: keystore-cred-secret
-                          key: keystore-alias
-                    - name: KEYSTORE_FULL_PATH
-                      valueFrom:
-                        secretKeyRef:
-                          name: keystore-cred-secret
-                          key: keystore-fullpath
-                  volumeMounts:
-                    - name: keystore
-                      mountPath: /etc/keystore/cert/
-                      readOnly: true
-            volumes:
-              - name: keystore
-                secret:
-                  secretName: keystore-cert-secret
+        spec:
+          containers:
+            - name: "${NAME}"
+              image: "${NAME}"
+              ports:
+                - containerPort: 8080
+              readinessProbe:
+                timeoutSeconds: 3
+                initialDelaySeconds: 3
+                httpGet:
+                  path: "/"
+                  port: 8080
+              livenessProbe:
+                timeoutSeconds: 3
+                initialDelaySeconds: 30
+                httpGet:
+                  path: "/"
+                  port: 8080
+              resources:
+                limits:
+                  memory: "${MEMORY_LIMIT}"
+              env:
+                - name: JVM_OPTS
+                  valueFrom:
+                    secretKeyRef:
+                      name: "${NAME}-secret"
+                      key: jvm-secret
+                - name: MONGO_DB_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: "${NAME}-secret"
+                      key: mongo-db-url
+                - name: MONGO_DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: "${NAME}-secret"
+                      key: mongo-db-name
+                - name: ES_KAFKA_SERVICE
+                  valueFrom:
+                    secretKeyRef:
+                      name: "${NAME}-secret"
+                      key: es_kafka_service_name
+                - name: ES_KAFKA_TOPIC_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: "${NAME}-secret"
+                      key: es_kafka_topic_name
+              volumeMounts:
+                - name: keystore-cert
+                  mountPath: /etc/keystore/cert/
+                  readOnly: true
+          volumes:
+            - name: keystore-cert
+              secret:
+                secretName: "${NAME}-keystore-cert-secret"
 parameters:
   - name: NAME
     displayName: Name
     description: The name for application and associated objects. Lowercase letters,
       numbers, and '-' only.
     required: true
-    value: java-spring-mongodb-kafka-template
+    value: java-spring-mongodb-kafka
     from: "[a-z0-9-]{40}"
   - name: GITHUB_REPO
     displayName: GitHub Repository
@@ -184,4 +182,4 @@ parameters:
     displayName: REPLICAS
     description: Number of active application pods.
     required: true
-    value: 2
+    value: "2"
