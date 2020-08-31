@@ -13,7 +13,7 @@ The sample Red Hat OpenShift templates are available in templates folder in the 
 
 This sample `yaml` template deploys the spring boot application at https://github.com/gargpriyank/java-spring-mongodb-kafka-example to connect to IBM Event Streams (Kafka) and IBM Databases for MongoDB. For more information, visit https://github.com/gargpriyank/java-spring-mongodb-kafka-example/blob/master/README.md.
 
-##### Prerequisites
+#### Prerequisites
 
 1. Install OpenShift CLI plugin to run `oc` commands.
 
@@ -25,7 +25,7 @@ keytool -storepasswd -keystore keystore.jks
 keytool -importcert -trustcacerts -file mongodb.pem -keystore keystore.jks -alias mongodb -storepass <secure_password>
 ```
 
-##### Deploy
+#### Deploy
 
 1. Login to OpenShift account and point to your selected namespace.
 
