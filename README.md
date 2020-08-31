@@ -1,6 +1,6 @@
 # Sample Red Hat OpenShift templates
 
-- [How to use templates](#how-to-use-templates)
+- [How to use the templates](#how-to-use-the-templates)
     - [java-spring-mongodb-kafka-template](#java-spring-mongodb-kafka-template)
         - [Prerequisites](#prerequisites)
         - [Deploy](#deploy)
