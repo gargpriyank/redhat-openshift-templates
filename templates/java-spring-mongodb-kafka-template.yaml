@@ -64,7 +64,7 @@ objects:
       output:
         to:
           kind: ImageStreamTag
-          name: "${NAME}:latest"
+          name: "${NAME}:${IMAGE_TAG}"
       triggers:
         - type: ImageChange
         - type: ConfigChange
@@ -171,3 +171,8 @@ parameters:
     description: Number of active application pods.
     required: true
     value: "2"
+  - name: IMAGE_TAG
+    displayName: IMAGE_TAG
+    description: Application image version.
+    required: true
+    value: "latest"
