@@ -86,7 +86,7 @@ objects:
               - "${NAME}"
             from:
               kind: ImageStreamTag
-              name: "${NAME}:latest"
+              name: "${NAME}:${IMAGE_TAG}"
         - type: ConfigChange
       replicas: "${{REPLICAS}}"
       selector:
